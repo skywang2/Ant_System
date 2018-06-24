@@ -1,3 +1,9 @@
+/*
+	蚁群算法解关键路径问题
+
+	遗传算法解关键路径问题
+
+*/
 #define _CRT_SECURE_NO_WARNINGS
 #include<stdio.h>
 #include<stdlib.h>
@@ -6,7 +12,7 @@
 #define CITY_NUM 5	//城市数量
 
 typedef struct graph {
-	int edge[NUM][NUM];
+	int edge[CITY_NUM][CITY_NUM];
 	int numV;//当前顶点数
 	int numE;//当前边数
 }graph;
@@ -16,8 +22,8 @@ graph *createGraph(graph *G) {
 	printf("输入顶点数和边数\n");
 	scanf_s("%d %d", &v, &e);
 	G->numE = e; G->numV = v;
-	for(i=0;i<NUM;i++)
-		for (j = 0; j < NUM; j++) {
+	for(i=0;i<CITY_NUM;i++)
+		for (j = 0; j < CITY_NUM; j++) {
 			if (i >= j) {
 				G->edge[i][j] = 0;
 				continue;
@@ -31,9 +37,9 @@ graph *createGraph(graph *G) {
 void print_graph(graph G) {
 	int i, j;
 	printf("顶点数：%d，边数：%d", G.numV, G.numE);
-	for (i = 0; i < NUM; i++) {
+	for (i = 0; i < CITY_NUM; i++) {
 		printf("\n");
-		for (j = 0; j < NUM; j++) {
+		for (j = 0; j < CITY_NUM; j++) {
 			printf("%d ", G.edge[i][j]);
 		}
 	}
@@ -47,7 +53,7 @@ typedef struct node{
 typedef struct headnode {
 	int headnum;
 	node *next;
-}head[NUM];
+}head[CITY_NUM];
 
 node *createNode() {
 	int n;
@@ -67,7 +73,7 @@ node *createNode() {
 headnode *createHeadNode(head headlist) {
 	int i, j, n;
 	printf("创建头节点结构体数组\n");
-	for (i = 0; i < NUM; i++) {
+	for (i = 0; i < CITY_NUM; i++) {
 		printf("请输入头节点号:");
 		scanf("%d", &n);
 		headlist[i].headnum = n;
@@ -95,7 +101,7 @@ headnode *createHeadNode(head headlist) {
 void print_linklist(struct headnode *headlist) {
 	int i;
 	node *temp = NULL;
-	for (i = 0; i < NUM; i++) {
+	for (i = 0; i < CITY_NUM; i++) {
 		printf("v%d", (headlist+i)->headnum);
 		temp = (headlist+i)->next;
 		while (1) {
@@ -127,6 +133,7 @@ int wheelSelection(float city[CITY_NUM]) {
 	}
 }
 
+//测试轮盘赌
 void test_of_WheelSelection() {
 	int count_a = 0, count_b = 0, count_c = 0, count_d = 0, count_e = 0;
 	int temp = 0, i;
@@ -150,16 +157,41 @@ void test_of_WheelSelection() {
 	printf("e概率:%f\n", count_e / float(count_a + count_b + count_c + count_d + count_e));
 }
 
-int main() {	
+//贪婪算法第一次找路
+float tanlan(graph G) {
+	int i = 0, j, temp_index;
+	float count = 0, temp_max;
+	printf("CITY_NUM:%d\n", CITY_NUM);
+	for (i = 0; i != (CITY_NUM) - 1;) {
+		printf("CITY_NUM:%d\n", CITY_NUM - 1);
+		temp_max = 0;
+		for (j = 0; j < CITY_NUM; j++) {
+			if (i >= j)continue;
+			if (G.edge[i][j] > temp_max) {
+				temp_max = G.edge[i][j];
+				temp_index = j;
+			}
+		}
+		count += temp_max;
+	}
+	return count;
+}
+
+int main() {
+	//float 
+	float C;
+
 	//初始化时间种子
 	srand((unsigned)time(NULL));
 	
 	test_of_WheelSelection();
 
 	//构造邻接矩阵
-	//graph G;
-	//createGraph(&G);
+	graph G;
+	createGraph(&G);
 	//print_graph(G);
+	C = tanlan(G);
+	printf("贪婪：%f", C);
 
 	//构造邻接链表
 	//head headlist;//head实际上是结构体数组的首地址
@@ -168,7 +200,6 @@ int main() {
 
 
 
-	getchar();
-	getchar();
+
 	return 0;
 }
