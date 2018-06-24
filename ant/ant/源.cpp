@@ -1,7 +1,9 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include<stdio.h>
 #include<stdlib.h>
-#define NUM 5
+#include<time.h>
+#define NUM 5	//蚂蚁数量
+#define CITY_NUM 5	//城市数量
 
 typedef struct graph {
 	int edge[NUM][NUM];
@@ -89,6 +91,7 @@ headnode *createHeadNode(head headlist) {
 	return headlist;
 }
 
+//因为实参是结构体数组，因此要传入数组首地址，并利用偏移量来进行操作
 void print_linklist(struct headnode *headlist) {
 	int i;
 	node *temp = NULL;
@@ -108,17 +111,61 @@ void print_linklist(struct headnode *headlist) {
 	}
 }
 
-int main() {
+//轮盘赌算法
+int wheelSelection(float city[CITY_NUM]) {
+	float number, order;
+	int i;
+	do {
+		number = rand() / (float)(RAND_MAX);
+	} while (number == 0.0);
+
+	order = 0.0;
+	for (i = 0; i < CITY_NUM; i++) {
+		if (number > order && number <= order + city[i])
+			return i;	//返回城市列表城市下标号
+		order += city[i];
+	}
+}
+
+void test_of_WheelSelection() {
+	int count_a = 0, count_b = 0, count_c = 0, count_d = 0, count_e = 0;
+	int temp = 0, i;
+	char city_name[CITY_NUM] = { 'a','b','c','d','e' };
+	float city_gailv[CITY_NUM] = { 0.14,0.23,0.06,0.4,0.17 };
+	for (i = 0; i < 100000; i++) {
+		temp = wheelSelection(city_gailv);
+		//printf("选择的城市:%d\n", temp);
+		switch (temp) {
+		case 0:count_a++; break;
+		case 1:count_b++; break;
+		case 2:count_c++; break;
+		case 3:count_d++; break;
+		case 4:count_e++; break;
+		}
+	}
+	printf("a概率:%f\n", count_a / float(count_a + count_b + count_c + count_d + count_e));
+	printf("b概率:%f\n", count_b / float(count_a + count_b + count_c + count_d + count_e));
+	printf("c概率:%f\n", count_c / float(count_a + count_b + count_c + count_d + count_e));
+	printf("d概率:%f\n", count_d / float(count_a + count_b + count_c + count_d + count_e));
+	printf("e概率:%f\n", count_e / float(count_a + count_b + count_c + count_d + count_e));
+}
+
+int main() {	
+	//初始化时间种子
+	srand((unsigned)time(NULL));
+	
+	test_of_WheelSelection();
+
 	//构造邻接矩阵
 	//graph G;
 	//createGraph(&G);
 	//print_graph(G);
 
 	//构造邻接链表
-	head headlist;//head实际上是结构体数组的首地址
-	createHeadNode(headlist);
-	print_linklist(headlist);
-	//printf("headlist[1].next.headnum=%d", headlist[1].next->nodenum);
+	//head headlist;//head实际上是结构体数组的首地址
+	//createHeadNode(headlist);
+	//print_linklist(headlist);
+
 
 
 	getchar();
