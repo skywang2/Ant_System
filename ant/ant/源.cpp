@@ -12,6 +12,7 @@
 #define CITY_NUM 5	//城市数量
 #define TOTAL_TURN 4000 //迭代总轮数
 #define FAVOR 1.3	//设定启发式信息
+#define ZHENGFA 0.5
 
 typedef struct graph {
 	int edge[CITY_NUM][CITY_NUM];	//两点间路径长度
@@ -202,12 +203,12 @@ int selectNextCity(graph G, int now) {
 	return selected;	//返回下一个城市下标号
 }
 
-void renew(graph *G, int all_length) {
+void renew(graph *G, float length[NUM], int route[NUM][CITY_NUM]) {
 	int i, j;
 	for (i = 0; i < CITY_NUM; i++) {
 		for (j = 0; j < CITY_NUM; j++) {
-			if (G->edge[i][j] == 0)continue;
-			G->xinxisu[i][j] = G->xinxisu[i][j] * 0.5 + NUM * all_length*0.3;
+
+			G->xinxisu[i][j] = G->xinxisu[i][j] * (1 - ZHENGFA) + length;
 		}
 	}
 
@@ -242,48 +243,56 @@ void ant_system(){
 		}
 	}
 
-	int now, next, all_length;	//当前城市下标、下一城市下标、完整路径的总长度
-	int route[CITY_NUM];	//可能到达的下一城市
+	int now, next;	//当前城市下标、下一城市下标
+	int route[NUM][CITY_NUM];	//可能到达的下一城市
 	int turn;
+	float length[NUM] = { 0.0 };	//一只蚂蚁完整路径的长度
 
 	//总轮数,一轮只有一只蚂蚁
 	for (turn = 0; turn < TOTAL_TURN; turn++) {
-		now = 0; next = 0; all_length = 0;
-		for (j = 0; j < CITY_NUM; j++)
-			route[j] = -1;	//每次只蚂蚁搜索完整路径都从头开始
-		j = 0;
-		route[0] = 0;	//所有蚂蚁从0号城市出发
-		while (now != CITY_NUM - 1) {	//当当前节点下标为最后点下标时，结束循环，得到完整路径
-			next = selectNextCity(G, now);
-			route[++j] = next;
-			all_length += G.edge[now][next];	//计算每只蚂蚁构建出的路径长度
-			now = next;
-		}
-		printf("\nall_length:%d\n", all_length);
+		for (i = 0; i < NUM; i++) {
+			now = 0; next = 0; 
+			for (j = 0; j < CITY_NUM; j++) {
+				length[j] = 0;
+				route[i][j] = -1;	//每次只蚂蚁搜索完整路径都从头开始
+			}
+			j = 0;
+			route[i][0] = 0;	//所有蚂蚁从0号城市出发
+			while (now != CITY_NUM - 1) {	//当当前节点下标为最后点下标时，结束循环，得到完整路径
+				next = selectNextCity(G, now);
+				route[i][++j] = next;
+				length[i] += G.edge[now][next];	//计算每只蚂蚁构建出的路径长度,第i只蚂蚁的路径
+				now = next;
+			}
 
-		printf("一只蚂蚁构造的完整路径：\n");
-		for (i = 0; i < CITY_NUM; i++) {
-			if (route[i] == -1)
-				break;
-			else
-				printf("->");
-			printf("%d", route[i]);
-		}
+			//打印一只蚂蚁的
+			/*printf("\nall_length:%d\n", length[i]);
+			printf("一只蚂蚁构造的完整路径：\n");
+			for (j = 0; j < CITY_NUM; j++) {
+				if (route[i][j] == -1)
+					break;
+				else
+					printf("->");
+				printf("%d", route[i][j]);
+			}*/
 
+			//沿着某条路的总长度
+
+		}
 		//更新每条边上的信息素浓度
-		renew(&G, all_length);
+		renew(&G, length, route);
 	}
 
 	//输出最终稳定的路径
-	printf("\n=====all_length:%d=====\n", all_length);
-	printf("一只蚂蚁构造的完整路径：\n");
-	for (i = 0; i < CITY_NUM; i++) {
-		if (route[i] == -1)
-			break;
-		else
-			printf("->");
-		printf("%d", route[i]);			
-	}
+	//printf("\n=====all_length:%d=====\n", all_length);
+	//printf("一只蚂蚁构造的完整路径：\n");
+	//for (i = 0; i < CITY_NUM; i++) {
+	//	if (route[i][] == -1)
+	//		break;
+	//	else
+	//		printf("->");
+	//	printf("%d", route[i]);			
+	//}
 
 }
 
