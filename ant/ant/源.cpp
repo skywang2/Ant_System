@@ -10,11 +10,13 @@
 #include<time.h>
 #define NUM 5	//蚂蚁数量
 #define CITY_NUM 5	//城市数量
+#define TOTAL_TURN 20 //迭代总轮数
 
 typedef struct graph {
 	int edge[CITY_NUM][CITY_NUM];
-	int numV;//当前顶点数
-	int numE;//当前边数
+	int numV;	//当前顶点数
+	int numE;	//当前边数
+	int xinxisu = 0;	//信息素浓度
 }graph;
 
 graph *createGraph(graph *G) {
@@ -118,7 +120,7 @@ void print_linklist(struct headnode *headlist) {
 }
 
 //轮盘赌算法
-int wheelSelection(float city[CITY_NUM]) {
+int wheelSelection(float city[], int city_num) {
 	float number, order;
 	int i;
 	do {
@@ -126,7 +128,7 @@ int wheelSelection(float city[CITY_NUM]) {
 	} while (number == 0.0);
 
 	order = 0.0;
-	for (i = 0; i < CITY_NUM; i++) {
+	for (i = 0; i < city_num; i++) {
 		if (number > order && number <= order + city[i])
 			return i;	//返回城市列表城市下标号
 		order += city[i];
@@ -134,13 +136,13 @@ int wheelSelection(float city[CITY_NUM]) {
 }
 
 //测试轮盘赌
-void test_of_WheelSelection() {
+void test_of_WheelSelection(int city_num,char city_name[],float city_gailv[]) {
 	int count_a = 0, count_b = 0, count_c = 0, count_d = 0, count_e = 0;
 	int temp = 0, i;
-	char city_name[CITY_NUM] = { 'a','b','c','d','e' };
-	float city_gailv[CITY_NUM] = { 0.14,0.23,0.06,0.4,0.17 };
+	//char city_name[city_num] = { 'a','b','c','d','e' };
+	//float city_gailv[city_num] = { 0.14,0.23,0.06,0.4,0.17 };
 	for (i = 0; i < 100000; i++) {
-		temp = wheelSelection(city_gailv);
+		temp = wheelSelection(city_gailv, city_num);
 		//printf("选择的城市:%d\n", temp);
 		switch (temp) {
 		case 0:count_a++; break;
@@ -161,9 +163,7 @@ void test_of_WheelSelection() {
 float tanlan(graph G) {
 	int i = 0, j, temp_index;
 	float count = 0, temp_max;
-	printf("CITY_NUM:%d\n", CITY_NUM);
-	for (i = 0; i != (CITY_NUM) - 1;) {
-		printf("CITY_NUM:%d\n", CITY_NUM - 1);
+	for (i = 0; i != CITY_NUM - 1;) {
 		temp_max = 0;
 		for (j = 0; j < CITY_NUM; j++) {
 			if (i >= j)continue;
@@ -172,34 +172,91 @@ float tanlan(graph G) {
 				temp_index = j;
 			}
 		}
+		i = temp_index;
 		count += temp_max;
 	}
 	return count;
 }
 
-int main() {
-	//float 
+//列举下一个可能到达的城市
+int selectNextCity(graph G, int now) {
+	int i, j;
+	for(i=0;i<CITY_NUM;i++)
+		for (j = 0; j < CITY_NUM; j++) {
+			if(G.edge[i][j]>0)
+		}
+
+	return ;	//返回下一个城市下标号
+}
+
+void ant_system(){ 
 	float C;
+	int i, j;
+	//信息素浓度(全局初始化)
+	float t0;
+
+	//构造邻接矩阵(路径矩阵)
+	graph G;
+	createGraph(&G);
+	//print_graph(G);
+	C = tanlan(G);	//路径长度
+	printf("贪婪：%f", C);
+	//初始化信息素浓度(尚未需要维护每条边的信息素浓度)
+	t0 = NUM / (float)C;
+	for (i = 0; i < CITY_NUM; i++) {
+		for (j = 0; j < CITY_NUM; j++) {
+			if (i >= j)continue;
+			if (G.edge[i][j] > 0)G.xinxisu = t0;	//只给存在的路径加信息素
+		}
+	}
+
+	int now, next;	//当前城市下标、下一城市下标
+	int route[NUM];	//可能到达的下一城市
+	int turn;
+
+	//总轮数
+	for (turn = 0; turn < TOTAL_TURN; turn++) {
+		//为每一轮中，每只蚂蚁构造完整路径
+		for (i = 0; i < NUM; i++) {
+
+			now = 0; next = 0; route[NUM] = { 0 };	//每次只蚂蚁搜索完整路径都从头开始
+			while (now != CITY_NUM - 1) {	//当当前节点下标为最后点下标时，结束循环，得到完整路径
+				next = selectNextCity(G, now);
+				route[now + 1] = next;
+				now = next;
+			}
+
+			//计算每只蚂蚁构建出的路径长度
+
+			//更新每条边上的信息素浓度
+
+		}
+	}
+	
+
+}
+
+void genetic_algorithm() {
+
+}
+
+int main() {
+	
 
 	//初始化时间种子
 	srand((unsigned)time(NULL));
 	
-	test_of_WheelSelection();
-
-	//构造邻接矩阵
-	graph G;
-	createGraph(&G);
-	//print_graph(G);
-	C = tanlan(G);
-	printf("贪婪：%f", C);
+	//测试轮盘赌
+	//test_of_WheelSelection();
+	
+	ant_system();
 
 	//构造邻接链表
 	//head headlist;//head实际上是结构体数组的首地址
 	//createHeadNode(headlist);
 	//print_linklist(headlist);
 
-
-
+	genetic_algorithm();
 
 	return 0;
 }
