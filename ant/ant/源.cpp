@@ -8,9 +8,9 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<time.h>
-#define NUM 5	//蚂蚁数量
+#define NUM 1	//蚂蚁数量
 #define CITY_NUM 5	//城市数量
-#define TOTAL_TURN 20 //迭代总轮数
+#define TOTAL_TURN 4000 //迭代总轮数
 #define FAVOR 1.3	//设定启发式信息
 
 typedef struct graph {
@@ -124,7 +124,7 @@ void print_linklist(struct headnode *headlist) {
 
 //轮盘赌算法
 int wheelSelection(float city[]) {
-	float number, order;
+	float number = 0.0, order;
 	int i;
 	do {
 		number = rand() / (RAND_MAX + 1.0);
@@ -202,6 +202,17 @@ int selectNextCity(graph G, int now) {
 	return selected;	//返回下一个城市下标号
 }
 
+void renew(graph *G, int all_length) {
+	int i, j;
+	for (i = 0; i < CITY_NUM; i++) {
+		for (j = 0; j < CITY_NUM; j++) {
+			if (G->edge[i][j] == 0)continue;
+			G->xinxisu[i][j] = G->xinxisu[i][j] * 0.5 + NUM * all_length*0.3;
+		}
+	}
+
+}
+
 void ant_system(){ 
 	float C;
 	int i, j;
@@ -223,7 +234,7 @@ void ant_system(){
 	C = tanlan(G);	//路径长度
 	printf("贪婪路径长度：%f\n", C);
 	//初始化信息素浓度(尚未需要维护每条边的信息素浓度)
-	t0 = NUM / (float)C;
+	t0 = NUM * (float)C * 0.3;
 	for (i = 0; i < CITY_NUM; i++) {
 		for (j = 0; j < CITY_NUM; j++) {
 			if (i >= j)continue;
@@ -231,31 +242,40 @@ void ant_system(){
 		}
 	}
 
-	int now, next;	//当前城市下标、下一城市下标
+	int now, next, all_length;	//当前城市下标、下一城市下标、完整路径的总长度
 	int route[CITY_NUM];	//可能到达的下一城市
 	int turn;
 
 	//总轮数,一轮只有一只蚂蚁
-	//for (turn = 0; turn < TOTAL_TURN; turn++) {
+	for (turn = 0; turn < TOTAL_TURN; turn++) {
+		now = 0; next = 0; all_length = 0;
+		for (j = 0; j < CITY_NUM; j++)
+			route[j] = -1;	//每次只蚂蚁搜索完整路径都从头开始
+		j = 0;
+		route[0] = 0;	//所有蚂蚁从0号城市出发
+		while (now != CITY_NUM - 1) {	//当当前节点下标为最后点下标时，结束循环，得到完整路径
+			next = selectNextCity(G, now);
+			route[++j] = next;
+			all_length += G.edge[now][next];	//计算每只蚂蚁构建出的路径长度
+			now = next;
+		}
+		printf("\nall_length:%d\n", all_length);
 
-			now = 0; next = 0; 
-			for (j = 0; j < NUM; j++)
-				route[j] = -1;	//每次只蚂蚁搜索完整路径都从头开始
-			j = 0;
-			route[0] = 0;	//所有蚂蚁从0号城市出发
-			while (now != CITY_NUM - 1) {	//当当前节点下标为最后点下标时，结束循环，得到完整路径
-				next = selectNextCity(G, now);
-				route[++j] = next;
-				now = next;
-			}
-			
-			//计算每只蚂蚁构建出的路径长度
+		printf("一只蚂蚁构造的完整路径：\n");
+		for (i = 0; i < CITY_NUM; i++) {
+			if (route[i] == -1)
+				break;
+			else
+				printf("->");
+			printf("%d", route[i]);
+		}
 
-			//更新每条边上的信息素浓度
-
-	//}
+		//更新每条边上的信息素浓度
+		renew(&G, all_length);
+	}
 
 	//输出最终稳定的路径
+	printf("\n=====all_length:%d=====\n", all_length);
 	printf("一只蚂蚁构造的完整路径：\n");
 	for (i = 0; i < CITY_NUM; i++) {
 		if (route[i] == -1)
