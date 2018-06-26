@@ -209,6 +209,7 @@ int selectNextCity(graph G, int now) {
 	return selected;	//返回下一个城市下标号
 }
 
+//更新信息素
 void renew(graph *G, float length[], int route[][CITY_NUM]) {
 	int i, j, k, l;	//出发点、到达点、蚂蚁号、检查路径
 	float weight;	//
@@ -309,7 +310,46 @@ void ant_system(){
 	}
 }
 
+//种群初始化
+void init() {
+
+}
+
+//适应度评估函数
+void evaluate() {
+
+}
+
+//运用轮盘赌对种群进行替换，增加优秀种群的数量
+void select() {
+
+}
+
+//交配，设定交配概率，轮盘赌决定是否交配
+void jiaopei() {
+
+}
+
+//变异，设定变异概率，只对分叉结点变异
+//要判断点是否是分叉点，需要记录该点直接后继数量
+void bianyi() {
+
+}
+
 void genetic_algorithm() {
+
+	//初始化
+
+	//适应度评估
+
+	//循环｛
+	//选择
+
+	//交配
+
+	//变异
+
+	//评估｝
 
 }
 
@@ -322,10 +362,10 @@ int main() {
 	//测试轮盘赌
 	//test_of_WheelSelection();
 
-	for (i = 0; i < 10; i++) {
+	/*for (i = 0; i < 10; i++) {
 		printf("\n\n第%d组结果\n", i + 1);
 		ant_system();
-	}
+	}*/
 
 
 	//构造邻接链表
