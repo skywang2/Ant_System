@@ -10,7 +10,7 @@
 #include<time.h>
 #define NUM 20	//蚂蚁数量
 #define CITY_NUM 9	//城市数量
-#define TOTAL_TURN 80 //迭代总轮数
+#define TOTAL_TURN 160 //迭代总轮数
 #define QIFA 0.5	//β，启发式信息作用
 #define EVER_FAVOR 0.6	//α，信息素作用
 #define FAVOR 0.7	//初始信息素浓度比率
