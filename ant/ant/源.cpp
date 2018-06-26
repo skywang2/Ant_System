@@ -8,12 +8,12 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<time.h>
-#define NUM 3	//蚂蚁数量
+#define NUM 20	//蚂蚁数量
 #define CITY_NUM 9	//城市数量
-#define TOTAL_TURN 40 //迭代总轮数
+#define TOTAL_TURN 80 //迭代总轮数
 #define QIFA 0.5	//β，启发式信息作用
-#define EVER_FAVOR 0.5	//α，信息素作用
-#define FAVOR 0.5	//初始信息素浓度比率
+#define EVER_FAVOR 0.6	//α，信息素作用
+#define FAVOR 0.7	//初始信息素浓度比率
 #define ZHENGFA 0.5	//蒸发率
 
 typedef struct graph {
@@ -323,7 +323,7 @@ int main() {
 	//test_of_WheelSelection();
 
 	for (i = 0; i < 10; i++) {
-		printf("\n\n第%d轮\n", i + 1);
+		printf("\n\n第%d组结果\n", i + 1);
 		ant_system();
 	}
 
