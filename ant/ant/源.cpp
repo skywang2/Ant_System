@@ -8,16 +8,19 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<time.h>
-#define NUM 1	//蚂蚁数量
-#define CITY_NUM 5	//城市数量
-#define TOTAL_TURN 4000 //迭代总轮数
-#define FAVOR 1.3	//设定启发式信息
-#define ZHENGFA 0.5
+#define NUM 3	//蚂蚁数量
+#define CITY_NUM 9	//城市数量
+#define TOTAL_TURN 40 //迭代总轮数
+#define QIFA 0.5	//β，启发式信息作用
+#define EVER_FAVOR 0.5	//α，信息素作用
+#define FAVOR 0.5	//初始信息素浓度比率
+#define ZHENGFA 0.5	//蒸发率
 
 typedef struct graph {
 	int edge[CITY_NUM][CITY_NUM];	//两点间路径长度
 	//int numV;	//当前顶点数
 	//int numE;	//当前边数
+	float qifa[CITY_NUM][CITY_NUM] = { 0 };
 	float xinxisu[CITY_NUM][CITY_NUM] = { 0 };	//信息素浓度
 }graph;
 
@@ -184,10 +187,10 @@ float tanlan(graph G) {
 
 //列举下一个可能到达的城市
 int selectNextCity(graph G, int now) {
-	int j, selected;
+	int j, selected, i;
 	float next_city_gailv[CITY_NUM] = { 0 };
 	for (j = 0; j < CITY_NUM; j++) {
-		next_city_gailv[j] = G.xinxisu[now][j] * FAVOR;	//下一访问城市概率
+		next_city_gailv[j] = G.xinxisu[now][j] * EVER_FAVOR + (float)G.edge[now][j] * QIFA;	//下一访问城市概率
 	}
 	float all = 0;	//概率和
 	for (j = 0; j < CITY_NUM; j++) {
@@ -198,20 +201,33 @@ int selectNextCity(graph G, int now) {
 		next_city_gailv[j] = next_city_gailv[j] / all;
 	}
 	//轮盘赌选择
-	selected = wheelSelection(next_city_gailv);
+	//do {
+		selected = wheelSelection(next_city_gailv);
+	//} while (selected >= CITY_NUM);
+	
 
 	return selected;	//返回下一个城市下标号
 }
 
-void renew(graph *G, float length[NUM], int route[NUM][CITY_NUM]) {
-	int i, j;
+void renew(graph *G, float length[], int route[][CITY_NUM]) {
+	int i, j, k, l;	//出发点、到达点、蚂蚁号、检查路径
+	float weight;	//
 	for (i = 0; i < CITY_NUM; i++) {
 		for (j = 0; j < CITY_NUM; j++) {
-
-			G->xinxisu[i][j] = G->xinxisu[i][j] * (1 - ZHENGFA) + length;
+			if (G->edge[i][j] == 0)continue;	//不计算不通的路径
+			weight = 0.0;
+			for (k = 0; k < NUM; k++) {
+				for (l = 0; l < CITY_NUM; l++) {
+					//判断当前蚂蚁的路径中是否经过目前检查的边
+					if (route[k][l + 1] == -1)break;
+					if (route[k][l] == i && route[k][l + 1] == j)
+						//1/weigh
+						weight += length[k];
+				}
+			}
+			G->xinxisu[i][j] = G->xinxisu[i][j] * (1 - ZHENGFA) + weight;
 		}
 	}
-
 }
 
 void ant_system(){ 
@@ -221,12 +237,18 @@ void ant_system(){
 	float t0;
 
 	int city[CITY_NUM][CITY_NUM] = {
-	{0,3,2,0,0},
-	{0,0,0,5,0},
-	{0,0,0,7,4},
-	{0,0,0,0,6},
-	{0,0,0,0,0}
+	{0,6,4,5,0,0,0,0,0},
+	{0,0,0,0,1,0,0,0,0},
+	{0,0,0,0,1,0,0,0,0},
+	{0,0,0,0,0,2,0,0,0},
+	{0,0,0,0,0,0,9,7,0},
+	{0,0,0,0,0,0,0,4,0},
+	{0,0,0,0,0,0,0,0,2},
+	{0,0,0,0,0,0,0,0,4},
+	{0,0,0,0,0,0,0,0,0}
 	};
+
+	//int qifa[CITY_NUM][CITY_NUM] = { 0 };
 
 	//构造邻接矩阵(路径矩阵)
 	graph G;
@@ -234,8 +256,8 @@ void ant_system(){
 	//print_graph(G);
 	C = tanlan(G);	//路径长度
 	printf("贪婪路径长度：%f\n", C);
-	//初始化信息素浓度(尚未需要维护每条边的信息素浓度)
-	t0 = NUM * (float)C * 0.3;
+	//初始化信息素浓度
+	t0 = FAVOR * NUM * (float)C;
 	for (i = 0; i < CITY_NUM; i++) {
 		for (j = 0; j < CITY_NUM; j++) {
 			if (i >= j)continue;
@@ -244,18 +266,21 @@ void ant_system(){
 	}
 
 	int now, next;	//当前城市下标、下一城市下标
-	int route[NUM][CITY_NUM];	//可能到达的下一城市
-	int turn;
+	int route[NUM][CITY_NUM];	//记录每只蚂蚁可能到达的下一城市
+	int turn=0;
 	float length[NUM] = { 0.0 };	//一只蚂蚁完整路径的长度
 
-	//总轮数,一轮只有一只蚂蚁
-	for (turn = 0; turn < TOTAL_TURN; turn++) {
+	//总轮数
+	while (turn < TOTAL_TURN) {
+		//printf("turn:%d\n", turn);
+		for (i = 0; i < NUM; i++)
+			length[i] = 0;
 		for (i = 0; i < NUM; i++) {
+			
 			now = 0; next = 0; 
-			for (j = 0; j < CITY_NUM; j++) {
-				length[j] = 0;
+			for (j = 0; j < CITY_NUM; j++) 				
 				route[i][j] = -1;	//每次只蚂蚁搜索完整路径都从头开始
-			}
+			
 			j = 0;
 			route[i][0] = 0;	//所有蚂蚁从0号城市出发
 			while (now != CITY_NUM - 1) {	//当当前节点下标为最后点下标时，结束循环，得到完整路径
@@ -264,36 +289,24 @@ void ant_system(){
 				length[i] += G.edge[now][next];	//计算每只蚂蚁构建出的路径长度,第i只蚂蚁的路径
 				now = next;
 			}
-
-			//打印一只蚂蚁的
-			/*printf("\nall_length:%d\n", length[i]);
-			printf("一只蚂蚁构造的完整路径：\n");
-			for (j = 0; j < CITY_NUM; j++) {
-				if (route[i][j] == -1)
-					break;
-				else
-					printf("->");
-				printf("%d", route[i][j]);
-			}*/
-
-			//沿着某条路的总长度
-
 		}
 		//更新每条边上的信息素浓度
 		renew(&G, length, route);
+		turn++;
 	}
 
 	//输出最终稳定的路径
-	//printf("\n=====all_length:%d=====\n", all_length);
-	//printf("一只蚂蚁构造的完整路径：\n");
-	//for (i = 0; i < CITY_NUM; i++) {
-	//	if (route[i][] == -1)
-	//		break;
-	//	else
-	//		printf("->");
-	//	printf("%d", route[i]);			
-	//}
-
+	for (i = 0; i < NUM; i++) {
+		printf("\n=====length[%d]:%f=====\n", i, length[i]);
+		printf("一轮中每一只蚂蚁构造的完整路径：");//若收敛成功则完成
+		for (j = 0; j < CITY_NUM; j++) {
+			if (route[i][j] == -1)
+				break;
+			else
+				printf("->");
+			printf("%d", route[i][j]);	
+		}
+	}
 }
 
 void genetic_algorithm() {
@@ -301,15 +314,19 @@ void genetic_algorithm() {
 }
 
 int main() {
-	
+	int i;
 
 	//初始化时间种子
 	srand((unsigned)time(NULL));
 	
 	//测试轮盘赌
 	//test_of_WheelSelection();
-	
-	ant_system();
+
+	for (i = 0; i < 10; i++) {
+		printf("\n\n第%d轮\n", i + 1);
+		ant_system();
+	}
+
 
 	//构造邻接链表
 	//head headlist;//head实际上是结构体数组的首地址
