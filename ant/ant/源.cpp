@@ -533,7 +533,7 @@ void bianyi(int c[BREED][CITY2], struct headnode *city_list) {
 					l = randx(CITY2);	//变异后的结点
 				} while (city_list[k].tail_length > 1);
 
-
+				
 
 				break;	//只变异一次
 			}
@@ -589,7 +589,7 @@ void geneticAlgorithm() {
 	evaluate(c, value, city_list);
 
 	//循环
-	int i;
+	int i, j;
 	for (i = 0; i < TOTAL_TURN2; i++) {
 		//选择
 		select(c, value);
@@ -603,6 +603,14 @@ void geneticAlgorithm() {
 		//评估
 		evaluate(c, value, city_list);
 	}
+
+	for (i = 0; i < BREED; i++) {
+		printf("\n第%d种群：");
+		for (j = 0; j < CITY2; j++) {
+			if (c[BREED][CITY2] == 1)
+				printf("%d ", j);
+		}
+	}	
 }
 
 int main() {
