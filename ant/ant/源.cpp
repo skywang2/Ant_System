@@ -19,11 +19,11 @@
 #define ZHENGFA 0.5	//蒸发率
 
 //遗传相关常量
-#define BREED 5	//种群数量
+#define BREED 20	//种群数量
 #define CITY2 9	//城市数量
 #define JIAOPEI	0.88	//交配概率
 #define BIANYI 0.1	//变异概率
-#define TOTAL_TURN2 1000	//迭代总轮数
+#define TOTAL_TURN2 100	//迭代总轮数
 
 typedef struct graph {
 	int edge[CITY_NUM][CITY_NUM];	//两点间路径长度
@@ -605,9 +605,9 @@ void geneticAlgorithm() {
 	}
 
 	for (i = 0; i < BREED; i++) {
-		printf("\n第%d种群：");
+		printf("\n第%d种群：", i);
 		for (j = 0; j < CITY2; j++) {
-			if (c[BREED][CITY2] == 1)
+			if (c[i][j] == 1)
 				printf("%d ", j);
 		}
 	}	
