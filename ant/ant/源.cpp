@@ -8,6 +8,8 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<time.h>
+
+//蚁群相关常量
 #define NUM 20	//蚂蚁数量
 #define CITY_NUM 9	//城市数量
 #define TOTAL_TURN 160 //迭代总轮数
@@ -15,6 +17,12 @@
 #define EVER_FAVOR 0.6	//α，信息素作用
 #define FAVOR 0.7	//初始信息素浓度比率
 #define ZHENGFA 0.5	//蒸发率
+
+//遗传相关常量
+#define BREED 5	//种群数量
+#define CITY2 9	//城市数量
+#define JIAOPEI	0.88	//交配概率
+#define BIANYI 0.1	//变异概率
 
 typedef struct graph {
 	int edge[CITY_NUM][CITY_NUM];	//两点间路径长度
@@ -62,7 +70,7 @@ typedef struct node{
 typedef struct headnode {
 	int headnum;
 	node *next;
-}head[CITY_NUM];
+}head[CITY2];
 
 node *createNode() {
 	int n;
@@ -310,9 +318,24 @@ void ant_system(){
 	}
 }
 
-//种群初始化
-void init() {
+int randx() {
+	int number;
+	number = rand() %
+	return number;
+}
 
+int selectNextCity2(struct headnode *city_list) {
+	city_list->headnum
+}
+
+//种群初始化
+void init(int c[BREED][CITY2], struct headnode *city_list) {
+	int i, j;
+	for (i = 0; i < BREED; i++) {
+		for (j = 0; j < CITY2; j++) {
+			c[i][j] = selectNextCity2(city_list, BREED);
+		}
+	}
 }
 
 //适应度评估函数
@@ -337,8 +360,15 @@ void bianyi() {
 }
 
 void genetic_algorithm() {
+	int c[BREED][CITY2] = { 0 };	//种群
 
-	//初始化
+	srand((unsigned)time(NULL));
+
+	//初始化种群、图
+	head city_list;
+	createHeadNode(city_list);
+	init(c, city_list);
+
 
 	//适应度评估
 
