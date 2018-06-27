@@ -12,7 +12,7 @@
 //蚁群相关常量
 #define NUM 20	//蚂蚁数量
 #define CITY_NUM 9	//城市数量
-#define TOTAL_TURN 160 //迭代总轮数
+#define TOTAL_TURN 160	//迭代总轮数
 #define QIFA 0.5	//β，启发式信息作用
 #define EVER_FAVOR 0.6	//α，信息素作用
 #define FAVOR 0.7	//初始信息素浓度比率
@@ -23,6 +23,7 @@
 #define CITY2 9	//城市数量
 #define JIAOPEI	0.88	//交配概率
 #define BIANYI 0.1	//变异概率
+#define TOTAL_TURN2 1000	//迭代总轮数
 
 typedef struct graph {
 	int edge[CITY_NUM][CITY_NUM];	//两点间路径长度
@@ -64,22 +65,25 @@ void print_graph(graph G) {
 
 typedef struct node{
 	int nodenum;
+	int length;	//两点间路径长度
 	node *next;
 }node;
 
 typedef struct headnode {
 	int headnum;
+	int tail_length = 0;
 	node *next;
 }head[CITY2];
 
 node *createNode() {
-	int n;
+	int n, length = 0;
 	node *node_now = NULL;
 	node_now = (node *)malloc(sizeof(node));
 	if (!node_now)return NULL;
-	printf("请输入节点号");
-	scanf("%d", &n);
+	printf("请输入节点号、两点间路径长度");
+	scanf("%d %d", &n, &length);
 	node_now->nodenum = n;
+	node_now->length = length;
 	node_now->next = NULL;
 	//假设当节点值为-1则释放节点
 	if (node_now->nodenum == -1)
@@ -88,14 +92,15 @@ node *createNode() {
 }
 
 headnode *createHeadNode(head headlist) {
-	int i, j, n;
+	int i, j, n, count = 0;
 	printf("创建头节点结构体数组\n");
-	for (i = 0; i < CITY_NUM; i++) {
+	for (i = 0; i < CITY2; i++) {
 		printf("请输入头节点号:");
 		scanf("%d", &n);
 		headlist[i].headnum = n;
 		//temp表示下一个节点的地址
 		node **temp = &headlist[i].next;
+		count = 0;	//清零，重新计数
 		for (j = 0;; j++) {
 			node *nextnode = createNode();
 			//如果下一个节点存在则把nextnode链接上去
@@ -103,12 +108,15 @@ headnode *createHeadNode(head headlist) {
 			if (nextnode){
 				*temp = nextnode;
 				temp = &nextnode->next;
+				count += 1;	//若加后继节点成功，则计数器+1
 			}
 			else {
 				*temp = NULL;
 				break;
-			}
+			}	
 		}
+		//记录该点后有几个可到达的点
+		headlist[i].tail_length = count;	
 	}
 
 	return headlist;
@@ -239,6 +247,7 @@ void renew(graph *G, float length[], int route[][CITY_NUM]) {
 	}
 }
 
+//运行一次蚁群算法，可在此处修改要测试的图
 void ant_system(){ 
 	float C;
 	int i, j;
@@ -318,69 +327,282 @@ void ant_system(){
 	}
 }
 
-int randx() {
+//返回一个0~(range-1)的整数
+int randx(int range) {
 	int number;
-	number = rand() %
+	number = rand() % range;
 	return number;
 }
 
-int selectNextCity2(struct headnode *city_list) {
-	city_list->headnum
+float rand0_1() {
+	float number;
+	number = rand() / (RAND_MAX + 1.0);
+	return number;
+}
+
+//返回一个保存了访问序列的数组
+void selectNextCity2(struct headnode *city_list,int order[]) {
+	int i, j, next = 0, round, tail = 0;
+	node *temp = NULL;
+	for (i = 0; i < CITY2; i++) {
+		order[i] = city_list[next].headnum;	//第一点从0点开始
+		printf("order:%d\n", order[i]);
+		if (order[i] == CITY2 - 1)break;	//路径已到达图的末尾节点则退出
+		//随机选择访问可达的下一个节点
+		//round是一个下标，邻接表后每个节点计数下标从0开始
+		round = randx(city_list[next].tail_length);
+		//tail = city_list[next].tail_length;
+		temp = city_list[next].next;
+		for (j = 0; j < round + 1; j++) {
+			next = temp->nodenum;
+			temp = temp->next;
+			if (temp == NULL)break;
+		}
+	}
 }
 
 //种群初始化
 void init(int c[BREED][CITY2], struct headnode *city_list) {
 	int i, j;
+	int order[CITY2];
+	
+	for (i = 0; i < CITY2; i++) {
+		order[i] = -1;
+	}
+	
 	for (i = 0; i < BREED; i++) {
+		printf("=====第%d号种群路径：=====\n", i);
+		selectNextCity2(city_list, order);
+		//根据访问序列进行0/1转换
 		for (j = 0; j < CITY2; j++) {
-			c[i][j] = selectNextCity2(city_list, BREED);
+			if (order[j] == -1)
+				break;
+			else
+				c[i][order[j]] = 1;
 		}
 	}
 }
 
-//适应度评估函数
-void evaluate() {
+//从一点到下一点的路经长度查询
+int pathLength(int now, int next, struct headnode *city_list) {
+	int length, i, tail_length;
+	node *temp = city_list[now].next;
+	
+	while (temp)
+	{
+		length = temp->length;
+		if (temp->nodenum == next)break;
+		temp = temp->next;
+	}
 
+	return length;
 }
 
-//运用轮盘赌对种群进行替换，增加优秀种群的数量
-void select() {
+//适应度评估函数
+void evaluate(int c[BREED][CITY2], float value[BREED], struct headnode *city_list) {
+	int i, j, now, next;
+	for (i = 0; i < BREED; i++) {
+		now = 0;
+		for (j = 0; j < CITY2; j++) {
+			if (c[i][j] == 1) {
+				next = j;
+				value[i] += pathLength(now, next, city_list);
+				now = next;
+			}
+		}
+	}
+}
 
+//轮盘赌算法2，只把CITY_NUM改成BREED了，看能不能想办法合并两个轮盘赌
+int wheelSelection2(float city[]) {
+	float number = 0.0, order;
+	int i;
+	do {
+		number = rand() / (RAND_MAX + 1.0);
+	} while (number == 0.0);
+
+	order = 0.0;
+	for (i = 0; i < BREED; i++) {
+		if (number > order && number <= order + city[i])
+			return i;	//返回选中种群下标号
+		order += city[i];
+	}
+}
+
+//运用轮盘赌对种群进行替换，有概率增加优秀种群的数量
+void select(int c[BREED][CITY2], float value[BREED]) {
+	int selected[BREED];	//按顺序选择替换方案
+	int c_copy[BREED][CITY2];
+	int i, j;
+	float all = 0.0;
+
+	for (i = 0; i < BREED; i++) {
+		all += value[i];
+	}
+
+	for (i = 0; i < BREED; i++) {
+		value[i] = value[i] / all;
+	}
+
+	for (i = 0; i < BREED; i++) {
+		selected[i] = wheelSelection2(value);
+	}
+
+	for(i=0;i<BREED;i++)
+		for (j = 0; j < CITY2; j++) {
+			c_copy[i][j] = c[i][j];
+		}
+
+	for (i = 0; i < BREED; i++) {
+		for (j = 0; j < CITY2; j++) {
+			c[i][j] = c_copy[selected[i]][j];
+		}
+	}
+}
+
+//交换路径
+void swap(int x[], int y[], int site) {
+	int temp, i;
+	for (i = site + 1; i < CITY2; i++) {
+		temp = x[i];
+		x[i] = y[i];
+		y[i] = temp;
+	}
 }
 
 //交配，设定交配概率，轮盘赌决定是否交配
-void jiaopei() {
-
+//交配策略：当交配位的城市节点相同且后继大于1个，交换其后的整条路径
+void jiaopei(int c[BREED][CITY2], struct headnode *city_list) {
+	float jiaopeigailv[BREED];
+	int i, j, count = 0;	//count记录交配个数
+	int site = CITY2 - 5;	//交配位
+	
+	for (i = 0; i < BREED; i++) {
+		jiaopeigailv[i] = rand0_1();
+		if (jiaopeigailv[i] < JIAOPEI) {
+			jiaopeigailv[i] = 1;
+			count++;
+		}else
+			jiaopeigailv[i] = 0;
+	}
+	i = 0;
+	while ((count % 2) != 0) {
+		jiaopeigailv[i++] = 0;
+		count--;
+	}
+	
+	//可能存在没有一条路能交配的情形，但是不要紧
+	for (i = 0; i < BREED; i++) {
+		if (jiaopeigailv[i] == 1) {
+			for (j = i+1; j < BREED; j++) {
+				//没写后继大于一的条件
+				if (c[i][site] == c[j][site] && city_list[site].tail_length > 1) {
+					//交换交配位后整条路径
+					swap(c[i], c[j], site);
+					jiaopeigailv[i] = 0;
+					count--;
+					jiaopeigailv[j] = 0;
+					count--;
+				}
+			}
+		}	
+	}
 }
 
 //变异，设定变异概率，只对分叉结点变异
 //要判断点是否是分叉点，需要记录该点直接后继数量
-void bianyi() {
+//假定每个种群只变异一次
+void bianyi(int c[BREED][CITY2], struct headnode *city_list) {
+	float bianyigailv[BREED][CITY2];
+	int i, j, k, l;
+	node *temp = NULL;
+	for (i = 0; i < BREED; i++) {
+		for (j = 0; j < CITY2; j++)
+			bianyigailv[i][j] = rand0_1();
+	}
 
+	for (i = 0; i < BREED; i++) {
+		//j不从0开始，因为必须从0开始
+		for (j = 1; j < CITY2; j++) {
+			//若达到变异概率，经过该点，该点后继大于一个
+			if (bianyigailv[i][j] < BIANYI && c[i][j] == 1 && city_list[j].tail_length > 1) {
+				do {
+					k = randx(CITY2);	//k是要变异的结点
+				} while (city_list[k].tail_length > 1);
+				do {
+					l = randx(CITY2);	//变异后的结点
+				} while (city_list[k].tail_length > 1);
+
+
+
+				break;	//只变异一次
+			}
+		}
+	}
 }
 
-void genetic_algorithm() {
+void geneticAlgorithm() {
 	int c[BREED][CITY2] = { 0 };	//种群
-
+	float value[BREED] = { 0.0 };	//保存每个种群适应度
 	srand((unsigned)time(NULL));
+
+	//邻接表
+	/*
+0
+1 6
+2 4
+3 5
+-1 0
+1 
+4 1
+-1 0
+2
+4 1
+-1 0
+3
+5 2
+-1 0
+4
+6 9
+7 7
+-1 0
+5
+7 4
+-1 0
+6
+8 2
+-1 0
+7
+8 4
+-1 0
+8
+-1 0
+	*/
 
 	//初始化种群、图
 	head city_list;
 	createHeadNode(city_list);
+	//print_linklist(city_list);
 	init(c, city_list);
 
-
 	//适应度评估
+	evaluate(c, value, city_list);
 
-	//循环｛
-	//选择
+	//循环
+	int i;
+	for (i = 0; i < TOTAL_TURN2; i++) {
+		//选择
+		select(c, value);
 
-	//交配
+		//交配
+		jiaopei(c, city_list);
 
-	//变异
+		//变异
+		bianyi(c, city_list);
 
-	//评估｝
-
+		//评估
+		evaluate(c, value, city_list);
+	}
 }
 
 int main() {
@@ -403,7 +625,7 @@ int main() {
 	//createHeadNode(headlist);
 	//print_linklist(headlist);
 
-	genetic_algorithm();
+	geneticAlgorithm();
 
 	return 0;
 }
